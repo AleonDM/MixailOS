@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"unsafe"
 
 	"github.com/AleonDM/MixailOS/core"
 	"github.com/AleonDM/MixailOS/ui"
@@ -17,9 +18,12 @@ var (
 	configInstance *core.Config
 )
 
-//export GetConfig
-func GetConfig() *core.Config {
-	return configInstance
+//export GetConfigUsername
+func GetConfigUsername() *C.char {
+	if configInstance == nil {
+		return C.CString("DefaultUser")
+	}
+	return C.CString(configInstance.Username)
 }
 
 //export InitMixailOS
@@ -60,6 +64,12 @@ func StartUI() {
 		InitMixailOS()
 	}
 	ui.Run(configInstance)
+}
+
+// FreeString освобождает память строки C
+//export FreeString
+func FreeString(s *C.char) {
+	C.free(unsafe.Pointer(s))
 }
 
 func main() {

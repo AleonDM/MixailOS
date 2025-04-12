@@ -5,19 +5,28 @@
 extern "C" {
 #endif
 
-// Экспортируемые функции из Go
-extern char* GoGetUsername();
-extern void GoSetUsername(char* username);
-extern char* GoGetCurrentDirectory();
-extern char* GoExecuteConsoleCommand(char* cmd);
-extern char* GoGetFileList();
-extern void GoChangeWallpaper(char* path);
-extern char* GoGetWallpaperPath();
-extern char* GoCreateTextFile(char* name, char* content);
-extern char* GoReadTextFile(char* name);
+// Функции для модуля CGO
+void FreeString(char* s);
 
-// Функция для запуска UI, реализованная в C++
-extern void RunUI();
+// Функции экспортированные из main.go
+void InitMixailOS();
+void StartUI();
+char* GetConfigUsername();
+
+// Функции экспортированные из ui/cgo_bridge.go
+char* GoGetUsername();
+void GoSetUsername(char* username);
+char* GoGetCurrentDirectory();
+char* GoExecuteConsoleCommand(char* cmd);
+char* GoGetFileList();
+void GoChangeWallpaper(char* path);
+char* GoGetWallpaperPath();
+char* GoCreateTextFile(char* name, char* content);
+char* GoReadTextFile(char* name);
+void RunUI();
+
+// Функция C++ для запуска UI
+void RunUI();
 
 #ifdef __cplusplus
 }

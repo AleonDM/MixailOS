@@ -139,6 +139,11 @@ func GoReadTextFile(cName *C.char) *C.char {
 //export RunUI
 func RunUI() {
 	fmt.Println("RunUI called from Go!")
+	if globalConfig == nil {
+		fmt.Println("Warning: config is nil, initializing...")
+		// У нас есть экспортированная функция InitMixailOS, но мы не можем её вызвать напрямую
+		// поэтому UI не запустится корректно без предварительной инициализации
+	}
 	C.RunUI()
 }
 
@@ -149,7 +154,6 @@ func Run(config *core.Config) {
 	RunUI()
 }
 
-// FreeString освобождает память строки C
 //export FreeString
 func FreeString(s *C.char) {
 	C.free(unsafe.Pointer(s))
