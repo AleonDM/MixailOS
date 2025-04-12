@@ -1,0 +1,34 @@
+# Бинарные файлы
+MixailOS
+MixailOS.exe
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+
+# Директории и файлы CMake
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Директории Go
+/pkg/
+/bin/
+/vendor/
+
+# Временные и резервные файлы
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# IDE и текстовые редакторы
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+*.swo 
