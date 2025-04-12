@@ -2,6 +2,7 @@ package ui
 
 // #cgo CXXFLAGS: -std=c++11
 // #cgo LDFLAGS: -lstdc++
+// #include <stdlib.h>
 // #include "ui_bridge.h"
 import "C"
 import (
