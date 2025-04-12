@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/yourusername/MixailOS/core"
-	"github.com/yourusername/MixailOS/ui"
+	"github.com/AleonDM/MixailOS/core"
+	"github.com/AleonDM/MixailOS/ui"
 )
 
 func main() {

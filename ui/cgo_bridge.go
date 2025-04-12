@@ -7,7 +7,7 @@ import "C"
 import (
 	"unsafe"
 
-	"github.com/yourusername/MixailOS/core"
+	"github.com/AleonDM/MixailOS/core"
 )
 
 var (
