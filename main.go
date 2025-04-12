@@ -7,13 +7,25 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/AleonDM/MixailOS/core"
 	"github.com/AleonDM/MixailOS/ui"
 )
 
-//export main
-func main() {
+var (
+	configInstance *core.Config
+)
+
+//export GetConfig
+func GetConfig() *core.Config {
+	return configInstance
+}
+
+//export InitMixailOS
+func InitMixailOS() {
+	fmt.Println("Initializing MixailOS...")
+	
 	// Инициализация рабочей директории
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -30,15 +42,33 @@ func main() {
 	}
 
 	// Инициализация системных настроек
-	config := core.NewConfig(mixailOSDir)
-	if err := config.Load(); err != nil {
+	configInstance = core.NewConfig(mixailOSDir)
+	if err := configInstance.Load(); err != nil {
 		fmt.Println("Загрузка конфигурации по умолчанию")
-		config.SetDefault()
-		if err := config.Save(); err != nil {
+		configInstance.SetDefault()
+		if err := configInstance.Save(); err != nil {
 			fmt.Println("Ошибка при сохранении конфигурации:", err)
 		}
 	}
+}
 
+//export StartUI
+func StartUI() {
+	fmt.Println("Starting MixailOS UI...")
 	// Запуск GUI интерфейса
-	ui.Run(config)
+	if configInstance == nil {
+		InitMixailOS()
+	}
+	ui.Run(configInstance)
+}
+
+func main() {
+	// Это нужно для корректной работы в Windows
+	runtime.LockOSThread()
+	
+	// Инициализация
+	InitMixailOS()
+	
+	// Запуск UI
+	StartUI()
 } 

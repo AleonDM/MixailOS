@@ -41,19 +41,24 @@ if(WIN32)
     list(APPEND CPP_SOURCES ${WIN_MAIN_SOURCE})
 endif()
 
-# Компиляция Go в статическую библиотеку
-add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libmixailos.a
+# Компиляция Go в статическую библиотеку перед CMake
+message(STATUS "Compiling Go code into static library...")
+execute_process(
     COMMAND go build -buildmode=c-archive -o ${CMAKE_CURRENT_BINARY_DIR}/libmixailos.a ${CMAKE_CURRENT_SOURCE_DIR}/main.go
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/main.go ${CMAKE_CURRENT_SOURCE_DIR}/core/config.go ${CMAKE_CURRENT_SOURCE_DIR}/core/console.go ${CMAKE_CURRENT_SOURCE_DIR}/core/filesystem.go ${CMAKE_CURRENT_SOURCE_DIR}/ui/cgo_bridge.go
+    RESULT_VARIABLE GO_BUILD_RESULT
 )
+
+if(NOT GO_BUILD_RESULT EQUAL 0)
+    message(FATAL_ERROR "Failed to compile Go code into static library")
+endif()
+
+# Создаем библиотеку из скомпилированного файла .a
+add_library(mixailos_lib STATIC IMPORTED)
+set_target_properties(mixailos_lib PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/libmixailos.a)
 
 # Создание исполняемого файла
 add_executable(MixailOS ${GUI_TYPE} ${CPP_SOURCES})
-
-# Добавляем зависимость от libmixailos.a
-add_dependencies(MixailOS ${CMAKE_CURRENT_BINARY_DIR}/libmixailos.a)
 
 # Определяем платформо-зависимые библиотеки
 if(UNIX)
@@ -63,7 +68,7 @@ elseif(WIN32)
 endif()
 
 # Связывание библиотек
-target_link_libraries(MixailOS PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/libmixailos.a ${FLTK_LIBRARIES} ${PLATFORM_LIBS})
+target_link_libraries(MixailOS PRIVATE mixailos_lib ${FLTK_LIBRARIES} ${PLATFORM_LIBS})
 
 # Установка
 install(TARGETS MixailOS DESTINATION bin)

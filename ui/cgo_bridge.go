@@ -8,6 +8,7 @@ package ui
 // #include "ui_bridge.h"
 import "C"
 import (
+	"fmt"
 	"unsafe"
 
 	"github.com/AleonDM/MixailOS/core"
@@ -21,6 +22,7 @@ var (
 
 // Initialize инициализирует интерфейс и компоненты
 func Initialize(config *core.Config) {
+	fmt.Println("Initializing UI components...")
 	globalConfig = config
 	globalFileSystem = core.NewFileSystem(config)
 	globalConsole = core.NewConsole(globalFileSystem, config)
@@ -28,22 +30,35 @@ func Initialize(config *core.Config) {
 
 //export GoGetUsername
 func GoGetUsername() *C.char {
+	if globalConfig == nil {
+		return C.CString("DefaultUser")
+	}
 	return C.CString(globalConfig.Username)
 }
 
 //export GoSetUsername
 func GoSetUsername(cUsername *C.char) {
+	if globalConfig == nil {
+		fmt.Println("Error: Config is not initialized!")
+		return
+	}
 	username := C.GoString(cUsername)
 	globalConfig.ChangeUsername(username)
 }
 
 //export GoGetCurrentDirectory
 func GoGetCurrentDirectory() *C.char {
+	if globalConfig == nil {
+		return C.CString(".")
+	}
 	return C.CString(globalConfig.GetCurrentDir())
 }
 
 //export GoExecuteConsoleCommand
 func GoExecuteConsoleCommand(cCmd *C.char) *C.char {
+	if globalConsole == nil {
+		return C.CString("Error: Console is not initialized!")
+	}
 	cmd := C.GoString(cCmd)
 	result := globalConsole.Execute(cmd)
 	return C.CString(result)
@@ -51,6 +66,10 @@ func GoExecuteConsoleCommand(cCmd *C.char) *C.char {
 
 //export GoGetFileList
 func GoGetFileList() *C.char {
+	if globalFileSystem == nil {
+		return C.CString("Error: FileSystem is not initialized!")
+	}
+	
 	files, err := globalFileSystem.ListFiles()
 	if err != nil {
 		return C.CString("Ошибка: " + err.Error())
@@ -69,6 +88,10 @@ func GoGetFileList() *C.char {
 
 //export GoChangeWallpaper
 func GoChangeWallpaper(cPath *C.char) {
+	if globalConfig == nil {
+		fmt.Println("Error: Config is not initialized!")
+		return
+	}
 	path := C.GoString(cPath)
 	globalConfig.ChangeWallpaper(path)
 	globalConfig.Save()
@@ -76,11 +99,17 @@ func GoChangeWallpaper(cPath *C.char) {
 
 //export GoGetWallpaperPath
 func GoGetWallpaperPath() *C.char {
+	if globalConfig == nil {
+		return C.CString("default.jpg")
+	}
 	return C.CString(globalConfig.Wallpaper)
 }
 
 //export GoCreateTextFile
 func GoCreateTextFile(cName *C.char, cContent *C.char) *C.char {
+	if globalFileSystem == nil {
+		return C.CString("Error: FileSystem is not initialized!")
+	}
 	name := C.GoString(cName)
 	content := C.GoString(cContent)
 	
@@ -94,6 +123,9 @@ func GoCreateTextFile(cName *C.char, cContent *C.char) *C.char {
 
 //export GoReadTextFile
 func GoReadTextFile(cName *C.char) *C.char {
+	if globalFileSystem == nil {
+		return C.CString("Error: FileSystem is not initialized!")
+	}
 	name := C.GoString(cName)
 	
 	content, err := globalFileSystem.ReadTextFile(name)
@@ -104,10 +136,17 @@ func GoReadTextFile(cName *C.char) *C.char {
 	return C.CString(content)
 }
 
+//export RunUI
+func RunUI() {
+	fmt.Println("RunUI called from Go!")
+	C.RunUI()
+}
+
 // Run запускает пользовательский интерфейс
 func Run(config *core.Config) {
+	fmt.Println("Starting UI from Go...")
 	Initialize(config)
-	C.RunUI()
+	RunUI()
 }
 
 // FreeString освобождает память строки C
