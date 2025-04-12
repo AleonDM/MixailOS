@@ -19,7 +19,7 @@ REM Checking MinGW installation
 where gcc >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo Error: MinGW gcc is not installed or not in PATH.
-    echo Please install MSYS2 and add C:\msys64\mingw64\bin to your PATH.
+    echo Please install MSYS2 and add C:\msys64\ucrt64\bin to your PATH.
     goto :error
 )
 
@@ -29,7 +29,7 @@ cd build
 
 REM Running CMake
 echo Configuring project with CMake...
-cmake .. -G "MinGW Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_MAKE_PROGRAM=mingw32-make
+cmake .. -G "MSYS Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_MAKE_PROGRAM=make
 if %ERRORLEVEL% NEQ 0 (
     echo Error during CMake configuration
     cd ..
@@ -38,7 +38,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 REM Building the project
 echo Building project...
-mingw32-make
+make
 if %ERRORLEVEL% NEQ 0 (
     echo Error during build
     cd ..
@@ -54,10 +54,11 @@ goto :end
 echo.
 echo Build failed. See the error messages above.
 echo.
-echo You might need to install MSYS2 and then run:
-echo pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make mingw-w64-x86_64-fltk
+echo You might need to install or update MSYS2 packages:
+echo 1. Open MSYS2 UCRT64 terminal
+echo 2. Run: pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-make mingw-w64-ucrt-x86_64-fltk make
 echo.
-echo And make sure to add C:\msys64\mingw64\bin to your PATH.
+echo And make sure to add C:\msys64\ucrt64\bin to your PATH.
 
 :end
 echo Press any key to exit...

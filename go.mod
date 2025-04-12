@@ -1,4 +1,4 @@
-module github.com/yourusername/MixailOS
+module github.com/AleonDM/MixailOS
 
 go 1.16
 
