@@ -1,5 +1,8 @@
 package main
 
+// #cgo CXXFLAGS: -std=c++11
+// #cgo LDFLAGS: -lstdc++
+import "C"
 import (
 	"fmt"
 	"os"
@@ -9,6 +12,7 @@ import (
 	"github.com/AleonDM/MixailOS/ui"
 )
 
+//export main
 func main() {
 	// Инициализация рабочей директории
 	homeDir, err := os.UserHomeDir()

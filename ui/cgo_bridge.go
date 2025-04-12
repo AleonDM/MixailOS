@@ -1,5 +1,7 @@
 package ui
 
+//go:generate go run golang.org/x/tools/cmd/cgo -exportheader ui_bridge.h
+
 // #cgo CXXFLAGS: -std=c++11
 // #cgo LDFLAGS: -lstdc++
 // #include <stdlib.h>
@@ -109,6 +111,7 @@ func Run(config *core.Config) {
 }
 
 // FreeString освобождает память строки C
+//export FreeString
 func FreeString(s *C.char) {
 	C.free(unsafe.Pointer(s))
 } 
