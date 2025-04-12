@@ -323,8 +323,8 @@ Fl_Group* createCalculatorTab(int x, int y, int w, int h) {
 extern "C" void RunUI() {
     // Инициализация FLTK
     Fl::scheme("gtk+");
-    Fl_Shared_Image::add_handler(fl_jpeg_image_handler);
-    Fl_Shared_Image::add_handler(fl_png_image_handler);
+    // Инициализация поддержки изображений
+    Fl_Shared_Image::initialize();
     
     const int windowWidth = 800;
     const int windowHeight = 600;
