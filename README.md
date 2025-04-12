@@ -1,6 +1,6 @@
 # MixailOS
 
-MixailOS - это эмулятор операционной системы, написанный на Go и C++. 
+MixailOS - это эмулятор операционной системы, написанный на Go с использованием библиотеки Fyne для графического интерфейса. 
 
 ## Функциональность
 
@@ -26,39 +26,34 @@ MixailOS - это эмулятор операционной системы, на
 ## Требования
 
 * Go 1.16+
-* C++ компилятор с поддержкой C++11
-* CMake 3.10+
-* Библиотека FLTK 1.3+ для C++ (графический интерфейс)
-* CGO для связи Go и C++
+* Библиотека Fyne 2.4.x для графического интерфейса
 
 ### Установка зависимостей
 
 #### Windows
 ```bash
-# Установка MSYS2 и необходимых пакетов
-# Скачайте и установите MSYS2 с https://www.msys2.org/
-# Затем в терминале MSYS2:
-pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-fltk
-
 # Установка Go
 # Скачайте и установите Go с https://golang.org/dl/
+
+# Установка зависимостей
+go mod tidy
 ```
 
 #### Linux
 ```bash
 # Ubuntu/Debian
 sudo apt-get update
-sudo apt-get install golang gcc g++ cmake libfltk1.3-dev
+sudo apt-get install golang gcc libgl1-mesa-dev xorg-dev
 
 # Fedora
-sudo dnf install golang gcc gcc-c++ cmake fltk-devel
+sudo dnf install golang gcc libXcursor-devel libXrandr-devel mesa-libGL-devel libXi-devel libXinerama-devel
 ```
 
 #### macOS
 ```bash
 # Установка через Homebrew
 brew update
-brew install go cmake fltk
+brew install go
 ```
 
 ## Сборка
@@ -69,18 +64,22 @@ git clone https://github.com/yourusername/MixailOS.git
 cd MixailOS
 ```
 
-2. Создайте директорию для сборки и соберите проект
+2. Соберите проект
 ```bash
-mkdir build
-cd build
-cmake ..
-make
+# Windows
+build.bat
+
+# Linux/macOS
+./build.sh
 ```
 
 ## Запуск
 
-Из директории сборки:
 ```bash
+# Windows
+MixailOS.exe
+
+# Linux/macOS
 ./MixailOS
 ```
 
@@ -106,6 +105,18 @@ cd Documents                # Переход в директорию Documents
 ls                          # Просмотр содержимого текущей директории
 mkdir Новая_Папка           # Создание новой директории
 ```
+
+## Архитектура
+
+MixailOS имеет модульную архитектуру:
+
+1. **core** - ядро системы:
+   - `config.go` - конфигурация и настройки
+   - `filesystem.go` - файловая система
+   - `console.go` - интерфейс командной строки
+
+2. **ui** - графический интерфейс:
+   - `ui.go` - реализация GUI на Fyne
 
 ## Лицензия
 Свободное программное обеспечение 

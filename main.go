@@ -1,14 +1,9 @@
 package main
 
-// #cgo CXXFLAGS: -std=c++11
-// #cgo LDFLAGS: -lstdc++
-import "C"
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
-	"unsafe"
 
 	"github.com/AleonDM/MixailOS/core"
 	"github.com/AleonDM/MixailOS/ui"
@@ -18,16 +13,7 @@ var (
 	configInstance *core.Config
 )
 
-//export GetConfigUsername
-func GetConfigUsername() *C.char {
-	if configInstance == nil {
-		return C.CString("DefaultUser")
-	}
-	return C.CString(configInstance.Username)
-}
-
-//export InitMixailOS
-func InitMixailOS() {
+func main() {
 	fmt.Println("Initializing MixailOS...")
 	
 	// Инициализация рабочей директории
@@ -54,31 +40,11 @@ func InitMixailOS() {
 			fmt.Println("Ошибка при сохранении конфигурации:", err)
 		}
 	}
-}
-
-//export StartUI
-func StartUI() {
-	fmt.Println("Starting MixailOS UI...")
+	
+	// Инициализация файловой системы и консоли
+	fileSystem := core.NewFileSystem(configInstance)
+	console := core.NewConsole(fileSystem, configInstance)
+	
 	// Запуск GUI интерфейса
-	if configInstance == nil {
-		InitMixailOS()
-	}
-	ui.Run(configInstance)
-}
-
-// FreeString освобождает память строки C
-//export FreeString
-func FreeString(s *C.char) {
-	C.free(unsafe.Pointer(s))
-}
-
-func main() {
-	// Это нужно для корректной работы в Windows
-	runtime.LockOSThread()
-	
-	// Инициализация
-	InitMixailOS()
-	
-	// Запуск UI
-	StartUI()
+	ui.RunUI(configInstance, fileSystem, console)
 } 
