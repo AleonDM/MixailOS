@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -186,7 +187,13 @@ func (ui *MixailOSUI) createConsoleTab() fyne.CanvasObject {
 // createFileManagerTab создает вкладку с файловым менеджером
 func (ui *MixailOSUI) createFileManagerTab() fyne.CanvasObject {
 	// Получаем список файлов
-	files, _ := ui.FileSystem.ListFiles()
+	files, err := ui.FileSystem.ListFiles()
+	if err != nil {
+		// Если не можем получить список файлов, создаем пустой список
+		files = []string{}
+	}
+	
+	// Сохраняем файлы в массив
 	fileNames := make([]string, len(files))
 	for i, file := range files {
 		fileNames[i] = file
@@ -224,7 +231,7 @@ func (ui *MixailOSUI) createFileManagerTab() fyne.CanvasObject {
 		)
 	})
 	
-	// Создаем список файлов
+	// Создаем список файлов с переменной fileNames из внешней области видимости
 	ui.FileList = widget.NewList(
 		func() int {
 			return len(fileNames)
@@ -236,6 +243,11 @@ func (ui *MixailOSUI) createFileManagerTab() fyne.CanvasObject {
 			)
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
+			// Проверяем границы массива
+			if id < 0 || id >= len(fileNames) {
+				return
+			}
+			
 			container := obj.(*fyne.Container)
 			label := container.Objects[1].(*widget.Label)
 			icon := container.Objects[0].(*widget.Icon)
@@ -252,6 +264,11 @@ func (ui *MixailOSUI) createFileManagerTab() fyne.CanvasObject {
 	)
 	
 	ui.FileList.OnSelected = func(id widget.ListItemID) {
+		// Проверяем границы массива
+		if id < 0 || id >= len(fileNames) {
+			return
+		}
+		
 		fileName := fileNames[id]
 		// Извлекаем имя файла без типа
 		parts := strings.Split(fileName, " (")
@@ -284,7 +301,7 @@ func (ui *MixailOSUI) createFileManagerTab() fyne.CanvasObject {
 		mkdirButton,
 		widget.NewButtonWithIcon("Удалить", theme.DeleteIcon(), func() {
 			// Проверяем, выбран ли файл
-			if ui.FileList.Selected() < 0 {
+			if ui.FileList.Selected() < 0 || ui.FileList.Selected() >= len(fileNames) {
 				dialog.ShowInformation("Внимание", "Выберите файл для удаления", ui.MainWindow)
 				return
 			}
@@ -302,6 +319,9 @@ func (ui *MixailOSUI) createFileManagerTab() fyne.CanvasObject {
 				},
 				ui.MainWindow,
 			)
+		}),
+		widget.NewButtonWithIcon("Обновить", theme.ViewRefreshIcon(), func() {
+			ui.refreshFileList()
 		}),
 	)
 	
@@ -379,17 +399,126 @@ func (ui *MixailOSUI) createCalculatorTab() fyne.CanvasObject {
 	
 	// Функция для вычисления результата
 	calculate := func() {
-		// Простая реализация вычислений
-		// В реальном приложении здесь должен быть более сложный парсер
+		// Если входная строка пуста, ничего не делаем
+		if currentInput == "" {
+			return
+		}
 		
-		// Для примера просто добавляем историю
+		// Разбиваем входную строку на части (числа и операции)
+		parts := strings.Fields(currentInput)
+		if len(parts) < 3 || len(parts)%2 == 0 {
+			// Если формат не соответствует A op B op C...
+			historyText := history.Text
+			historyText += currentInput + " = Ошибка формата\n"
+			history.SetText(historyText)
+			currentInput = ""
+			result.SetText("Ошибка")
+			return
+		}
+		
+		// Выполняем операции последовательно слева направо
+		// Сначала обрабатываем умножение и деление
+		var val float64
+		var err error
+		
+		// Первое число
+		val, err = parseFloat(parts[0])
+		if err != nil {
+			historyText := history.Text
+			historyText += currentInput + " = Ошибка: " + err.Error() + "\n"
+			history.SetText(historyText)
+			currentInput = ""
+			result.SetText("Ошибка")
+			return
+		}
+		
+		// Первый проход: умножение и деление
+		for i := 1; i < len(parts); i += 2 {
+			op := parts[i]
+			if op != "*" && op != "/" {
+				continue
+			}
+			
+			// Получаем следующее число
+			next, err := parseFloat(parts[i+1])
+			if err != nil {
+				historyText := history.Text
+				historyText += currentInput + " = Ошибка: " + err.Error() + "\n"
+				history.SetText(historyText)
+				currentInput = ""
+				result.SetText("Ошибка")
+				return
+			}
+			
+			// Выполняем операцию
+			switch op {
+			case "*":
+				val *= next
+				// Обновляем части, чтобы пропустить этот результат при последующих операциях
+				parts[i+1] = fmt.Sprintf("%g", val)
+				parts[i] = " " // пометка для пропуска
+				parts[i-1] = " "
+			case "/":
+				if next == 0 {
+					historyText := history.Text
+					historyText += currentInput + " = Ошибка: деление на ноль\n"
+					history.SetText(historyText)
+					currentInput = ""
+					result.SetText("Ошибка")
+					return
+				}
+				val /= next
+				// Обновляем части, чтобы пропустить этот результат при последующих операциях
+				parts[i+1] = fmt.Sprintf("%g", val)
+				parts[i] = " " // пометка для пропуска
+				parts[i-1] = " "
+			}
+		}
+		
+		// Второй проход: сложение и вычитание
+		foundValue := false
+		val = 0
+		
+		for i := 0; i < len(parts); i++ {
+			if parts[i] == " " {
+				continue
+			}
+			
+			if !foundValue {
+				val, err = parseFloat(parts[i])
+				if err == nil {
+					foundValue = true
+				}
+				continue
+			}
+			
+			if parts[i] == "+" || parts[i] == "-" {
+				op := parts[i]
+				if i+1 < len(parts) && parts[i+1] != " " {
+					next, err := parseFloat(parts[i+1])
+					if err != nil {
+						continue
+					}
+					
+					switch op {
+					case "+":
+						val += next
+					case "-":
+						val -= next
+					}
+				}
+			}
+		}
+		
+		// Форматируем результат и обновляем историю
+		resultStr := fmt.Sprintf("%g", val)
 		historyText := history.Text
-		historyText += currentInput + " = [результат]\n"
+		historyText += currentInput + " = " + resultStr + "\n"
 		history.SetText(historyText)
 		
-		// Очищаем текущий ввод
-		currentInput = ""
-		result.SetText("0")
+		// Обновляем поле результата
+		result.SetText(resultStr)
+		currentInput = resultStr
 	}
 	
 	// Кнопки для цифр
@@ -433,6 +562,11 @@ func (ui *MixailOSUI) createCalculatorTab() fyne.CanvasObject {
 	)
 	
 	return calcLayout
+}
+
+// parseFloat преобразует строку в число с плавающей точкой
+func parseFloat(s string) (float64, error) {
+	return strconv.ParseFloat(s, 64)
 }
 
 // createSettingsTab создает вкладку с настройками
@@ -516,14 +650,97 @@ func (ui *MixailOSUI) showAboutDialog() {
 	dialog.ShowInformation("О программе", aboutText, ui.MainWindow)
 }
 
-// refreshFileList обновляет список файлов в файловом менеджере
+// refreshFileList обновляет список файлов в UI
 func (ui *MixailOSUI) refreshFileList() {
-	// Обновляем метку с текущим путем
+	// Обновляем текст текущего пути
 	ui.CurrentPath.SetText(ui.Config.GetCurrentDir())
 	
-	// Получаем обновленный список файлов
-	files, _ := ui.FileSystem.ListFiles()
+	// Получаем список файлов
+	files, err := ui.FileSystem.ListFiles()
+	if err != nil {
+		dialog.ShowError(fmt.Errorf("Ошибка при получении списка файлов: %v", err), ui.MainWindow)
+		return
+	}
 	
-	// Обновляем данные списка
-	ui.FileList.Refresh()
+	// Сохраняем файлы в новый массив
+	fileNames := make([]string, len(files))
+	for i, file := range files {
+		fileNames[i] = file
+	}
+	
+	// Создаем новый список файлов
+	newFileList := widget.NewList(
+		func() int {
+			return len(fileNames)
+		},
+		func() fyne.CanvasObject {
+			return container.NewHBox(
+				widget.NewIcon(theme.FileIcon()),
+				widget.NewLabel("Template Item"),
+			)
+		},
+		func(id widget.ListItemID, obj fyne.CanvasObject) {
+			// Проверяем границы массива
+			if id < 0 || id >= len(fileNames) {
+				return
+			}
+			
+			container := obj.(*fyne.Container)
+			label := container.Objects[1].(*widget.Label)
+			icon := container.Objects[0].(*widget.Icon)
+			
+			// Изменяем иконку в зависимости от типа (файл или директория)
+			if strings.Contains(fileNames[id], "(dir)") {
+				icon.SetResource(theme.FolderIcon())
+			} else {
+				icon.SetResource(theme.FileIcon())
+			}
+			
+			label.SetText(fileNames[id])
+		},
+	)
+	
+	newFileList.OnSelected = func(id widget.ListItemID) {
+		// Проверяем границы массива
+		if id < 0 || id >= len(fileNames) {
+			return
+		}
+		
+		fileName := fileNames[id]
+		// Извлекаем имя файла без типа
+		parts := strings.Split(fileName, " (")
+		name := parts[0]
+		
+		// Проверяем, директория ли это
+		if strings.Contains(fileName, "(dir)") {
+			ui.FileSystem.ChangeDirectory(name)
+			ui.refreshFileList()
+		} else if strings.HasSuffix(name, ".txt") {
+			// Читаем текстовый файл
+			content, err := ui.FileSystem.ReadTextFile(name)
+			if err != nil {
+				dialog.ShowError(err, ui.MainWindow)
+				return
+			}
+			
+			// Показываем диалог с содержимым
+			textViewer := widget.NewMultiLineEntry()
+			textViewer.SetText(content)
+			textViewer.Disable() // Только для чтения
+			
+			dialog.ShowCustom("Файл: "+name, "Закрыть", container.NewScroll(textViewer), ui.MainWindow)
+		}
+	}
+	
+	// Находим контейнер, содержащий старый список файлов
+	tabs := ui.MainTabs.Objects[0].(*container.AppTabs)
+	fileManagerTab := tabs.Items[1].Content.(*fyne.Container)
+	fileListContainer := fileManagerTab.Objects[0].(*fyne.Container)
+	
+	// Удаляем старый список файлов
+	fileListContainer.Objects[0] = newFileList
+	ui.FileList = newFileList
+	
+	// Обновляем UI
+	fileListContainer.Refresh()
 } 
