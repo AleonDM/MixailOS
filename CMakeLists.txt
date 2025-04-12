@@ -18,7 +18,7 @@ file(GLOB CPP_SOURCES "ui/*.cpp")
 # Компиляция Go в статическую библиотеку
 add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/libmixailos.a
-    COMMAND go build -buildmode=c-archive -o ${CMAKE_CURRENT_BINARY_DIR}/libmixailos.a ./...
+    COMMAND go build -buildmode=c-archive -o ${CMAKE_CURRENT_BINARY_DIR}/libmixailos.a ${CMAKE_CURRENT_SOURCE_DIR}/main.go
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/main.go
 )
